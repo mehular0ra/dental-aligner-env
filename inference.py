@@ -25,9 +25,12 @@ from openai import OpenAI
 # Environment variables
 # ---------------------------------------------------------------------------
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
+MODEL_NAME   = os.environ.get("MODEL_NAME",   "Qwen/Qwen2.5-72B-Instruct")
+HF_TOKEN     = os.environ.get("HF_TOKEN",     "")
 HF_SPACE_URL = os.environ.get("HF_SPACE_URL", "http://localhost:7860")
+
+# Benchmark identifier used in structured stdout logs
+BENCHMARK = "dental-aligner-env"
 
 # ---------------------------------------------------------------------------
 # Clinical constants (mirrored from dental_constants.py)
@@ -712,10 +715,11 @@ def run_task(
     # Extract difficulty label from task_id
     diff_label = task_id.replace("task_", "")
 
-    print(f"[START] task={task_id} difficulty={diff_label}")
+    print(f"[START] task={task_id} env={BENCHMARK} model={MODEL_NAME}", flush=True)
 
-    total_reward = 0.0
-    n_steps = 0
+    total_reward  = 0.0
+    n_steps       = 0
+    step_rewards: List[float] = []
 
     # ---- Step 1: plan 24 stages ----
     user_msg = build_user_message(obs_data, task_id, stage=0)
@@ -788,9 +792,11 @@ def run_task(
         reward_1 = 0.0
 
     total_reward = float(reward_1)
+    step_rewards.append(total_reward)
     print(
-        f"[STEP] step={n_steps} action='24 stages for 28 teeth' "
-        f"reward={total_reward:.4f} done={done_1}"
+        f"[STEP] step={n_steps} action='plan 24 stages for 28 teeth' "
+        f"reward={total_reward:.2f} done={str(done_1).lower()} error=null",
+        flush=True,
     )
 
     # ---- Step 2 (task_hard only): handle adversarial jitter ----
@@ -879,14 +885,19 @@ def run_task(
             reward_2 = 0.0
 
         total_reward = float(reward_2)
+        step_rewards.append(total_reward)
         print(
-            f"[STEP] step={n_steps} action='24 stages for 28 teeth' "
-            f"reward={total_reward:.4f} done={done_2}"
+            f"[STEP] step={n_steps} action='recovery plan for {stages_remaining} remaining stages' "
+            f"reward={total_reward:.2f} done={str(done_2).lower()} error=null",
+            flush=True,
         )
 
-    success = total_reward >= 0.5
+    success      = total_reward >= 0.5
+    rewards_str  = ",".join(f"{r:.2f}" for r in step_rewards)
     print(
-        f"[END] total_reward={total_reward:.4f} steps={n_steps} success={success}"
+        f"[END] success={str(success).lower()} steps={n_steps} "
+        f"score={total_reward:.2f} rewards={rewards_str}",
+        flush=True,
     )
     return total_reward, n_steps
 
@@ -913,9 +924,9 @@ def main() -> None:
         try:
             reward, steps = run_task(client, task_id, HF_SPACE_URL)
         except Exception as exc:
-            print(f"[ERROR] task={task_id} exception={exc}")
+            print(f"[ERROR] task={task_id} exception={exc}", flush=True)
             reward = 0.0
-            print(f"[END] total_reward=0.0000 steps=0 success=False")
+            print(f"[END] success=false steps=0 score=0.00 rewards=0.00", flush=True)
 
         scores[task_id] = reward
 
