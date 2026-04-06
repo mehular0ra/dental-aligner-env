@@ -297,6 +297,30 @@ def trajectory_to_gif(
     return output_path
 
 
+def trajectory_to_gif_base64_single(
+    trajectory: np.ndarray,
+    label: str = '',
+    fps: int = 4,
+) -> str:
+    """Single-trajectory GIF as base64 string with an optional label prefix."""
+    if not HAS_VISUALIZATION:
+        return ''
+    frames = _build_frames(trajectory, prefix=label)
+    frames = _add_pause_frames(frames, n_start=3, n_end=5)
+    duration_ms = int(1000 / fps)
+    buf = io.BytesIO()
+    frames[0].save(
+        buf,
+        format='GIF',
+        save_all=True,
+        append_images=frames[1:],
+        duration=duration_ms,
+        loop=0,
+    )
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode('utf-8')
+
+
 def trajectory_to_gif_base64(
     trajectory: np.ndarray,
     fps: int = 4,
@@ -397,3 +421,51 @@ def generate_comparison_gif(
         loop=0,
     )
     return output_path
+
+
+def generate_comparison_gif_base64(
+    baseline_trajectory: np.ndarray,
+    agent_trajectory: np.ndarray,
+    fps: int = 3,
+) -> str:
+    """Side-by-side comparison GIF (SLERP baseline vs clinical staged) as base64."""
+    if not HAS_VISUALIZATION:
+        return ''
+
+    n_stages = min(baseline_trajectory.shape[0], agent_trajectory.shape[0])
+    duration_ms = int(1000 / fps)
+    frames: List[Image.Image] = []
+
+    for stage_idx in range(n_stages):
+        base_config  = baseline_trajectory[stage_idx]
+        agent_config = agent_trajectory[stage_idx]
+
+        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+        fig.subplots_adjust(wspace=0.3, hspace=0.4)
+        fig.suptitle(
+            f'Stage {stage_idx:02d} / 25  —  SLERP Baseline (left)  vs  Clinical Staged (right)',
+            fontsize=11, fontweight='bold',
+        )
+
+        render_stage_frame(base_config,  stage_idx, axes[0][0], title_prefix='SLERP | ', arch='upper')
+        render_stage_frame(agent_config, stage_idx, axes[0][1], title_prefix='Staged | ', arch='upper')
+        render_stage_frame(base_config,  stage_idx, axes[1][0], title_prefix='SLERP | ', arch='lower')
+        render_stage_frame(agent_config, stage_idx, axes[1][1], title_prefix='Staged | ', arch='lower')
+
+        img = _fig_to_pil(fig)
+        plt.close(fig)
+        frames.append(img)
+
+    frames = _add_pause_frames(frames, n_start=4, n_end=6)
+
+    buf = io.BytesIO()
+    frames[0].save(
+        buf,
+        format='GIF',
+        save_all=True,
+        append_images=frames[1:],
+        duration=duration_ms,
+        loop=0,
+    )
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode('utf-8')
