@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "dental-aligner-env"
+version = "1.0.0"
+description = "OpenEnv RL environment for 24-stage dental aligner trajectory planning"
+requires-python = ">=3.11"
+dependencies = [
+    "openenv-core",
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic>=2.0",
+    "numpy",
+    "scipy",
+    "openai",
+    "matplotlib",
+    "Pillow",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[project.scripts]
+dental-aligner-env = "server.app:main"
+server = "server.app:main"

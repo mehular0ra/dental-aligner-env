@@ -1,0 +1,16 @@
+name: dental-aligner-env
+version: '1.0.0'
+description: >
+  RL environment for training AI agents to plan 24-stage dental aligner
+  trajectories. Agents receive initial malocclusion and target dental
+  configurations (28 teeth in 6-DoF SE(3) pose representation) and must
+  produce smooth, clinically compliant 24-stage plans. Includes adversarial
+  mode with jitter injection (simulating patient non-compliance) to test
+  trajectory recovery. battisiBot agent uses hybrid LLM+Python planning.
+tags:
+  - openenv
+  - dental
+  - orthodontics
+  - trajectory-planning
+  - se3
+  - medical-ai
