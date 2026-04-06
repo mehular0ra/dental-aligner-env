@@ -1,12 +1,15 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.backends.legacy:build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "dental-aligner-env"
 version = "1.0.0"
-description = "OpenEnv RL environment for 24-stage dental aligner trajectory planning"
+description = "OpenEnv RL environment for 24-stage dental aligner trajectory planning in SE(3)"
+readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["openenv", "reinforcement-learning", "dental", "orthodontics", "se3"]
 dependencies = [
     "openenv-core",
     "fastapi",
@@ -17,11 +20,26 @@ dependencies = [
     "openai",
     "matplotlib",
     "Pillow",
+    "requests",
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-
 [project.scripts]
-dental-aligner-env = "server.app:main"
+# Entry point used by openenv serve and `uv run server`
 server = "server.app:main"
+
+[tool.hatch.build.targets.wheel]
+# Include both the server package and top-level modules
+packages = ["server"]
+include = ["models.py", "client.py", "__init__.py"]
+
+[tool.uv]
+# Prefer binary wheels; skip building from source when possible
+compile-bytecode = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]  # handled by formatter

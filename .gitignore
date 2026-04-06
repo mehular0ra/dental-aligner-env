@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments (uv creates .venv by default)
+.venv/
+venv/
+env/
+
+# uv cache
+.uv/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Secrets — never commit these
+.env
+.env.*
+*.pem
+*.key
+
+# Generated artefacts
+*.gif
+*.png
+*.jpg
+outputs/
+
+# Jupyter
+.ipynb_checkpoints/

@@ -608,6 +608,7 @@ dependencies = [
     { name = "openenv-core" },
     { name = "pillow" },
     { name = "pydantic" },
+    { name = "requests" },
     { name = "scipy" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -621,6 +622,7 @@ requires-dist = [
     { name = "openenv-core" },
     { name = "pillow" },
     { name = "pydantic", specifier = ">=2.0" },
+    { name = "requests" },
     { name = "scipy" },
     { name = "uvicorn", extras = ["standard"] },
 ]
