@@ -288,17 +288,19 @@ R_recovery = clip(recovery_ratio, 0, 1)
 
 ## Setup and Installation
 
-```bash
-pip install openenv-core fastapi uvicorn pydantic numpy scipy openai matplotlib Pillow
-```
-
-For a reproducible environment using venv:
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management. Install uv first:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install openenv-core fastapi uvicorn pydantic numpy scipy openai matplotlib Pillow
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+
+Then install all dependencies from the lockfile:
+
+```bash
+uv sync
+```
+
+This creates a `.venv` automatically and installs all pinned dependencies from `uv.lock`.
 
 ---
 
@@ -307,7 +309,7 @@ pip install openenv-core fastapi uvicorn pydantic numpy scipy openai matplotlib 
 Start the server:
 
 ```bash
-uvicorn server.app:app --host 0.0.0.0 --port 7860
+uv run uvicorn server.app:app --host 0.0.0.0 --port 7860
 ```
 
 Verify health:
@@ -344,15 +346,38 @@ curl -X POST http://localhost:7860/visualize \
 
 ---
 
+## Running the Inference Agent
+
+Set the required environment variables and run:
+
+```bash
+export HF_TOKEN=<your-hf-token>
+export HF_SPACE_URL=https://grimoors-dental-aligner-env.hf.space
+export API_BASE_URL=https://router.huggingface.co/v1
+export MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
+
+uv run python inference.py
+```
+
+Expected stdout format (evaluated by the grader):
+
+```
+[START] task=task_easy env=dental-aligner-env model=Qwen/Qwen2.5-72B-Instruct
+[STEP] step=1 action='plan 24 stages for 28 teeth' reward=0.91 done=true error=null
+[END] success=true steps=1 score=0.91 rewards=0.91
+```
+
+---
+
 ## Baseline Scores
 
-Scores are mean episodic rewards across 50 randomly sampled episodes per task.
+Scores are single-episode rewards measured against the live HF Space.
 
 | Task | SLERP Baseline | battisiBot (LLM-planned) | Notes |
 |------|---------------|--------------------------|-------|
-| task_easy | ~0.40 | ~0.65 | LLM prioritises incisors first |
-| task_medium | ~0.38 | ~0.60 | Staging quality contributes 15% |
-| task_hard | ~0.35 | ~0.55 | Recovery bonus up to +15% |
+| task_easy | ~0.87 | ~0.91 | LLM prioritises incisors first |
+| task_medium | ~0.89 | ~0.85 | Staging quality contributes 15% |
+| task_hard | ~0.32 | ~0.34 | Recovery bonus up to +15% |
 
 The SLERP baseline applies quaternion spherical linear interpolation uniformly across all 24 stages without any clinical staging logic. It achieves moderate smoothness but low staging quality scores.
 
