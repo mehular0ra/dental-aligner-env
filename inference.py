@@ -16,12 +16,18 @@ Usage:
 import json
 import math
 import os
+import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
-from openai import OpenAI
+try:
+    from openai import OpenAI
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "openai>=1.0", "--quiet"])
+    from openai import OpenAI
 
 # ---------------------------------------------------------------------------
 # Environment variables
