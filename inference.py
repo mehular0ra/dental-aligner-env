@@ -7,42 +7,21 @@ Hybrid LLM + Python approach:
   2. Python computes the exact trajectory numerically using SLERP + easing functions
   3. This guarantees valid quaternions and respects clinical constraints
 
+External dependencies: openai only (numpy and requests replaced with stdlib)
+
 Usage:
   API_BASE_URL=... MODEL_NAME=... HF_TOKEN=... HF_SPACE_URL=... python inference.py
 """
-
-import subprocess
-import sys
-
-# Auto-install third-party deps if running in a bare environment (e.g. evaluator CI)
-def _pip_install(*packages: str) -> None:
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "--quiet", *packages]
-    )
-
-try:
-    import numpy as np
-except ImportError:
-    _pip_install("numpy>=1.24")
-    import numpy as np
-
-try:
-    import requests
-except ImportError:
-    _pip_install("requests>=2.28")
-    import requests
-
-try:
-    from openai import OpenAI
-except ImportError:
-    _pip_install("openai>=1.0")
-    from openai import OpenAI
 
 import json
 import math
 import os
 import time
+import urllib.error
+import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
+
+from openai import OpenAI
 
 # ---------------------------------------------------------------------------
 # Environment variables
@@ -128,8 +107,33 @@ OUTPUT FORMAT: Respond ONLY with valid JSON (no markdown, no explanation):
 
 
 # ---------------------------------------------------------------------------
-# Math utilities
+# HTTP helper (stdlib only — no requests)
 # ---------------------------------------------------------------------------
+
+def _http_post(url: str, payload: Dict, timeout: int = 60) -> Dict:
+    """POST JSON payload and return parsed JSON response. Raises on HTTP error."""
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+# ---------------------------------------------------------------------------
+# Math utilities (pure Python — no numpy)
+# ---------------------------------------------------------------------------
+
+def _clamp(x: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, x))
+
+
+def _vec_norm(v: List[float]) -> float:
+    return math.sqrt(sum(x * x for x in v))
+
 
 def ease_inout(t: float, ease_in: float, ease_out: float) -> float:
     """
@@ -140,38 +144,37 @@ def ease_inout(t: float, ease_in: float, ease_out: float) -> float:
     smooth = t * t * (3.0 - 2.0 * t)   # smoothstep
     result = (1 - ease_in) * t + ease_in * smooth
     result = (1 - ease_out) * result + ease_out * smooth
-    return float(np.clip(result, 0.0, 1.0))
+    return _clamp(result, 0.0, 1.0)
 
 
-def quaternion_normalize(q: np.ndarray) -> np.ndarray:
+def quaternion_normalize(q: List[float]) -> List[float]:
     """Normalize quaternion to unit length. Returns [qw, qx, qy, qz]."""
-    n = np.linalg.norm(q)
+    n = _vec_norm(q)
     if n < 1e-10:
-        return np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
-    return (q / n).astype(np.float64)
+        return [1.0, 0.0, 0.0, 0.0]
+    return [x / n for x in q]
 
 
-def quaternion_slerp(q0: np.ndarray, q1: np.ndarray, t: float) -> np.ndarray:
+def quaternion_slerp(q0: List[float], q1: List[float], t: float) -> List[float]:
     """
     Spherical linear interpolation between unit quaternions q0 and q1.
-    t=0 returns q0, t=1 returns q1.
-    Convention: [qw, qx, qy, qz].
+    t=0 returns q0, t=1 returns q1.  Convention: [qw, qx, qy, qz].
     """
-    q0 = quaternion_normalize(np.asarray(q0, dtype=np.float64))
-    q1 = quaternion_normalize(np.asarray(q1, dtype=np.float64))
+    q0 = quaternion_normalize(q0)
+    q1 = quaternion_normalize(q1)
 
-    dot = float(np.dot(q0, q1))
+    dot = sum(a * b for a, b in zip(q0, q1))
 
     # Ensure shortest arc
     if dot < 0.0:
-        q1 = -q1
+        q1 = [-x for x in q1]
         dot = -dot
 
-    dot = min(1.0, max(-1.0, dot))
+    dot = _clamp(dot, -1.0, 1.0)
 
     if dot > 0.9995:
         # Nearly identical — linear interpolation
-        result = q0 + t * (q1 - q0)
+        result = [a + t * (b - a) for a, b in zip(q0, q1)]
         return quaternion_normalize(result)
 
     theta_0 = math.acos(dot)
@@ -182,30 +185,30 @@ def quaternion_slerp(q0: np.ndarray, q1: np.ndarray, t: float) -> np.ndarray:
     s0 = math.cos(theta) - dot * sin_theta / sin_theta_0
     s1 = sin_theta / sin_theta_0
 
-    return quaternion_normalize(s0 * q0 + s1 * q1)
+    return quaternion_normalize([s0 * a + s1 * b for a, b in zip(q0, q1)])
 
 
-def quaternion_multiply(q1: np.ndarray, q2: np.ndarray) -> np.ndarray:
-    """Hamilton product q1 * q2. Both [qw, qx, qy, qz]."""
+def quaternion_multiply(q1: List[float], q2: List[float]) -> List[float]:
+    """Hamilton product q1 * q2.  Both [qw, qx, qy, qz]."""
     w1, x1, y1, z1 = q1[0], q1[1], q1[2], q1[3]
     w2, x2, y2, z2 = q2[0], q2[1], q2[2], q2[3]
-    return np.array([
+    return [
         w1*w2 - x1*x2 - y1*y2 - z1*z2,
         w1*x2 + x1*w2 + y1*z2 - z1*y2,
         w1*y2 - x1*z2 + y1*w2 + z1*x2,
         w1*z2 + x1*y2 - y1*x2 + z1*w2,
-    ], dtype=np.float64)
+    ]
 
 
-def quaternion_inverse(q: np.ndarray) -> np.ndarray:
+def quaternion_inverse(q: List[float]) -> List[float]:
     """Quaternion inverse = conjugate (assumes unit quaternion)."""
-    return np.array([q[0], -q[1], -q[2], -q[3]], dtype=np.float64)
+    return [q[0], -q[1], -q[2], -q[3]]
 
 
-def quaternion_to_angle_deg(q: np.ndarray) -> float:
-    """Return rotation angle in degrees. Uses 2 * arccos(|qw|)."""
+def quaternion_to_angle_deg(q: List[float]) -> float:
+    """Return rotation angle in degrees.  Uses 2 * arccos(|qw|)."""
     q = quaternion_normalize(q)
-    qw = float(np.clip(q[0], -1.0, 1.0))
+    qw = _clamp(q[0], -1.0, 1.0)
     return math.degrees(2.0 * math.acos(abs(qw)))
 
 
@@ -233,33 +236,33 @@ def compute_tooth_trajectory(
     - In between                : SLERP for rotation, LERP for translation,
                                   with easing applied
     """
-    q_init = np.array(initial_pose[:4], dtype=np.float64)
-    t_init = np.array(initial_pose[4:7], dtype=np.float64)
-    q_tgt  = np.array(target_pose[:4], dtype=np.float64)
-    t_tgt  = np.array(target_pose[4:7], dtype=np.float64)
+    q_init = list(initial_pose[:4])
+    t_init = list(initial_pose[4:7])
+    q_tgt  = list(target_pose[:4])
+    t_tgt  = list(target_pose[4:7])
 
     q_init = quaternion_normalize(q_init)
     q_tgt  = quaternion_normalize(q_tgt)
 
     # Clamp staging parameters
-    start_stage = int(np.clip(start_stage, 1, n_stages))
-    end_stage   = int(np.clip(end_stage, start_stage, n_stages))
+    start_stage = int(_clamp(start_stage, 1, n_stages))
+    end_stage   = int(_clamp(end_stage, start_stage, n_stages))
 
     span = end_stage - start_stage + 1e-8
 
     trajectory: List[List[float]] = []
     for stage in range(1, n_stages + 1):
         if stage < start_stage:
-            q_k = q_init.copy()
-            t_k = t_init.copy()
+            q_k = list(q_init)
+            t_k = list(t_init)
         elif stage > end_stage:
-            q_k = q_tgt.copy()
-            t_k = t_tgt.copy()
+            q_k = list(q_tgt)
+            t_k = list(t_tgt)
         else:
             raw_alpha = (stage - start_stage) / span
             alpha = ease_inout(raw_alpha, ease_in, ease_out)
             q_k = quaternion_slerp(q_init, q_tgt, alpha)
-            t_k = (1.0 - alpha) * t_init + alpha * t_tgt
+            t_k = [(1.0 - alpha) * t_init[j] + alpha * t_tgt[j] for j in range(3)]
 
         q_k = quaternion_normalize(q_k)
         pose = [float(q_k[0]), float(q_k[1]), float(q_k[2]), float(q_k[3]),
@@ -288,50 +291,62 @@ def enforce_clinical_constraints(
     """
     n_stages = len(trajectory_stages)
 
-    # Build a (n_stages+1) x 28 x 7 working array including stage 0
-    # Index 0 = initial, indices 1..n_stages = planned stages
-    arr = np.zeros((n_stages + 1, N_TEETH, 7), dtype=np.float64)
-    arr[0] = np.array(initial_poses, dtype=np.float64)
+    # Build a (n_stages+1) x N_TEETH x 7 working array including stage 0
+    # arr[s][i] = pose as list of 7 floats
+    arr: List[List[List[float]]] = [
+        [[0.0] * 7 for _ in range(N_TEETH)]
+        for _ in range(n_stages + 1)
+    ]
+    arr[0] = [list(p) for p in initial_poses]
 
     for s_idx, stage in enumerate(trajectory_stages):
         poses = stage["poses"]
         for i in range(N_TEETH):
-            arr[s_idx + 1, i] = poses[i]
+            arr[s_idx + 1][i] = list(poses[i])
 
     # Forward pass: enforce limits stage-by-stage
     for s in range(1, n_stages + 1):
         prev = arr[s - 1]
-        curr = arr[s].copy()
+        curr = [list(p) for p in arr[s]]
 
         for i in range(N_TEETH):
             # --- Translation delta ---
-            delta_t = curr[i, 4:7] - prev[i, 4:7]
-            dist_t = float(np.linalg.norm(delta_t))
+            delta_t = [curr[i][j] - prev[i][j] for j in range(4, 7)]
+            dist_t = _vec_norm(delta_t)
             if dist_t > MAX_TRANSLATION_PER_STAGE_MM and dist_t > 1e-10:
                 scale = MAX_TRANSLATION_PER_STAGE_MM / dist_t
-                curr[i, 4:7] = prev[i, 4:7] + delta_t * scale
+                curr[i][4] = prev[i][4] + delta_t[0] * scale
+                curr[i][5] = prev[i][5] + delta_t[1] * scale
+                curr[i][6] = prev[i][6] + delta_t[2] * scale
 
             # --- Rotation delta ---
-            q_prev = quaternion_normalize(prev[i, :4])
-            q_curr = quaternion_normalize(curr[i, :4])
+            q_prev = quaternion_normalize(prev[i][:4])
+            q_curr = quaternion_normalize(curr[i][:4])
             q_rel = quaternion_multiply(q_curr, quaternion_inverse(q_prev))
             rot_deg = quaternion_to_angle_deg(q_rel)
 
             if rot_deg > MAX_ROTATION_PER_STAGE_DEG and rot_deg > 1e-6:
-                # Reduce the rotation: re-slerp toward prev by clamped fraction
                 frac = MAX_ROTATION_PER_STAGE_DEG / rot_deg
                 q_curr = quaternion_slerp(q_prev, q_curr, frac)
-                curr[i, :4] = quaternion_normalize(q_curr)
+                q_curr = quaternion_normalize(q_curr)
+                curr[i][0] = q_curr[0]
+                curr[i][1] = q_curr[1]
+                curr[i][2] = q_curr[2]
+                curr[i][3] = q_curr[3]
 
             # Always keep unit quaternion
-            curr[i, :4] = quaternion_normalize(curr[i, :4])
+            qn = quaternion_normalize(curr[i][:4])
+            curr[i][0] = qn[0]
+            curr[i][1] = qn[1]
+            curr[i][2] = qn[2]
+            curr[i][3] = qn[3]
 
         arr[s] = curr
 
     # Write back into the list structure
     for s_idx in range(n_stages):
         for i in range(N_TEETH):
-            trajectory_stages[s_idx]["poses"][i] = arr[s_idx + 1, i].tolist()
+            trajectory_stages[s_idx]["poses"][i] = list(arr[s_idx + 1][i])
 
     return trajectory_stages
 
@@ -437,7 +452,6 @@ def _extract_initial_target_poses(
     if baseline_json:
         try:
             baseline = json.loads(baseline_json)
-            # stage "1" is close to initial; stage "24" is close to target
             stage_1  = baseline.get("1", [])
             stage_24 = baseline.get("24", [])
             if stage_1 and stage_24:
@@ -457,12 +471,6 @@ def _extract_initial_target_poses(
 def build_user_message(obs_data: Dict, task_id: str, stage: int = 0) -> str:
     """
     Build a rich text prompt for battisiBot describing the current episode state.
-
-    Includes:
-    - Tooth table with current/target/distances
-    - Grader weight info
-    - Worked SLERP example for 2-3 teeth
-    - Constraint reminders
     """
     rows = _parse_tooth_table(obs_data)
     difficulty_map = {
@@ -592,6 +600,7 @@ def call_battisibot(
     ]
 
     last_error = ""
+    raw_text = ""
     for attempt in range(max_retries):
         try:
             response = client.chat.completions.create(
@@ -605,7 +614,6 @@ def call_battisibot(
             # Strip markdown code fences if present
             if raw_text.startswith("```"):
                 lines = raw_text.split("\n")
-                # Remove first and last fence lines
                 start = 1 if lines[0].startswith("```") else 0
                 end   = len(lines) - 1 if lines[-1].strip() == "```" else len(lines)
                 raw_text = "\n".join(lines[start:end]).strip()
@@ -624,20 +632,18 @@ def call_battisibot(
             for tid in TOOTH_IDS:
                 if tid in plan_map:
                     plan = plan_map[tid]
-                    # Validate / clamp fields
-                    plan["start_stage"] = int(np.clip(plan.get("start_stage", 1), 1, 24))
-                    plan["end_stage"]   = int(np.clip(plan.get("end_stage",   24), plan["start_stage"], 24))
-                    plan["ease_in"]     = float(np.clip(plan.get("ease_in",   0.3), 0.0, 1.0))
-                    plan["ease_out"]    = float(np.clip(plan.get("ease_out",  0.3), 0.0, 1.0))
+                    plan["start_stage"] = int(_clamp(plan.get("start_stage", 1), 1, 24))
+                    plan["end_stage"]   = int(_clamp(plan.get("end_stage",   24), plan["start_stage"], 24))
+                    plan["ease_in"]     = float(_clamp(plan.get("ease_in",   0.3), 0.0, 1.0))
+                    plan["ease_out"]    = float(_clamp(plan.get("ease_out",  0.3), 0.0, 1.0))
                 else:
-                    # Default: uniform SLERP for missing tooth
                     plan = {
-                        "tooth_id":   tid,
+                        "tooth_id":    tid,
                         "start_stage": 1,
-                        "end_stage":  24,
-                        "ease_in":    0.2,
-                        "ease_out":   0.2,
-                        "priority":   "uniform",
+                        "end_stage":   24,
+                        "ease_in":     0.2,
+                        "ease_out":    0.2,
+                        "priority":    "uniform",
                     }
                 full_plans.append(plan)
 
@@ -650,14 +656,13 @@ def call_battisibot(
         except (json.JSONDecodeError, ValueError, KeyError) as exc:
             last_error = str(exc)
             if attempt < max_retries - 1:
-                # Append error context and retry with a simplified prompt
-                messages.append({"role": "assistant", "content": raw_text if "raw_text" in dir() else ""})
+                messages.append({"role": "assistant", "content": raw_text})
                 messages.append({
                     "role": "user",
                     "content": (
                         f"Your previous response had a parse error: {last_error}\n"
                         "Please respond with ONLY valid JSON matching the required format. "
-                        "No markdown, no explanation — pure JSON starting with '{{' and ending with '}}'."
+                        "No markdown, no explanation — pure JSON starting with '{' and ending with '}'."
                     ),
                 })
         except Exception as exc:
@@ -725,17 +730,9 @@ def run_task(
         "task_id":    task_id,
         "model_name": f"battisiBot-{MODEL_NAME}",
     }
-    reset_resp = requests.post(
-        f"{space_url}/reset",
-        json=reset_payload,
-        timeout=60,
-    )
-    reset_resp.raise_for_status()
-    reset_data = reset_resp.json()
+    reset_data = _http_post(f"{space_url}/reset", reset_payload, timeout=60)
 
-    obs_data   = reset_data.get("observation", {})
-    difficulty = obs_data.get("task_description", "")
-    # Extract difficulty label from task_id
+    obs_data  = reset_data.get("observation", {})
     diff_label = task_id.replace("task_", "")
 
     print(f"[START] task={task_id} env={BENCHMARK} model={MODEL_NAME}", flush=True)
@@ -788,7 +785,7 @@ def run_task(
         trajectory_stages, initial_poses, tooth_plans
     )
 
-    # Build action payload
+    # Build action payload and submit step 1
     action_payload = {
         "action": {
             "trajectory": trajectory_stages,
@@ -798,17 +795,11 @@ def run_task(
         }
     }
 
-    step_resp = requests.post(
-        f"{space_url}/step",
-        json=action_payload,
-        timeout=120,
-    )
-    step_resp.raise_for_status()
-    step_data = step_resp.json()
+    step_data = _http_post(f"{space_url}/step", action_payload, timeout=120)
 
     n_steps += 1
-    reward_1 = step_resp.json().get("reward")
-    done_1   = step_resp.json().get("done", True)
+    reward_1 = step_data.get("reward")
+    done_1   = step_data.get("done", True)
 
     # reward can be None on task_hard step 1 (jitter applied, episode continues)
     if reward_1 is None:
@@ -826,12 +817,10 @@ def run_task(
     if task_id == "task_hard" and not done_1:
         obs_step2 = step_data.get("observation", {})
 
-        # Current stage after jitter
-        current_stage = obs_step2.get("current_stage", 12)
+        current_stage    = obs_step2.get("current_stage", 12)
         stages_remaining = obs_step2.get("stages_remaining", N_STAGES - current_stage)
 
         user_msg_2 = build_user_message(obs_step2, task_id, stage=current_stage)
-        # Prepend adversarial context with explicit stage numbering instructions
         jitter_note = (
             f"\n[ADVERSARIAL JITTER APPLIED — RECOVERY STEP]\n"
             f"Jitter was injected at global stage {current_stage}. You now have {stages_remaining} stages remaining.\n"
@@ -843,14 +832,12 @@ def run_task(
         )
         user_msg_2 = jitter_note + user_msg_2
 
-        llm_result_2 = call_battisibot(client, user_msg_2)
+        llm_result_2  = call_battisibot(client, user_msg_2)
         tooth_plans_2 = llm_result_2["tooth_plans"]
         plan_map_2    = {p["tooth_id"]: p for p in tooth_plans_2}
 
-        # Re-extract poses from jittered observation
         initial_poses_2, target_poses_2 = _extract_initial_target_poses(obs_step2)
 
-        # Compute revised trajectories for remaining stages
         all_tooth_trajectories_2: List[List[List[float]]] = []
         for i, tid in enumerate(TOOTH_IDS):
             plan = plan_map_2.get(tid, {
@@ -859,8 +846,6 @@ def run_task(
                 "ease_in":     0.3,
                 "ease_out":    0.3,
             })
-            # Remap: the agent sees stages 1..stages_remaining
-            # relative to the jitter point
             traj = compute_tooth_trajectory(
                 initial_pose=initial_poses_2[i],
                 target_pose=target_poses_2[i],
@@ -876,7 +861,7 @@ def run_task(
         for s in range(stages_remaining):
             stage_poses = [all_tooth_trajectories_2[i][s] for i in range(N_TEETH)]
             trajectory_stages_2.append({
-                "stage_index": s + 1,   # relative 1..stages_remaining; splice maps to global stages
+                "stage_index": s + 1,
                 "tooth_ids":   TOOTH_IDS,
                 "poses":       stage_poses,
             })
@@ -894,16 +879,11 @@ def run_task(
             }
         }
 
-        step_resp_2 = requests.post(
-            f"{space_url}/step",
-            json=action_payload_2,
-            timeout=120,
-        )
-        step_resp_2.raise_for_status()
+        step_data_2 = _http_post(f"{space_url}/step", action_payload_2, timeout=120)
 
         n_steps += 1
-        reward_2 = step_resp_2.json().get("reward")
-        done_2   = step_resp_2.json().get("done", True)
+        reward_2 = step_data_2.get("reward")
+        done_2   = step_data_2.get("done", True)
         if reward_2 is None:
             reward_2 = 0.0
 
@@ -915,8 +895,8 @@ def run_task(
             flush=True,
         )
 
-    success      = total_reward >= 0.5
-    rewards_str  = ",".join(f"{r:.2f}" for r in step_rewards)
+    success     = total_reward >= 0.5
+    rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
     print(
         f"[END] success={str(success).lower()} steps={n_steps} "
         f"score={total_reward:.2f} rewards={rewards_str}",
@@ -933,7 +913,6 @@ def main() -> None:
     """Run all three evaluation tasks and print a summary."""
     t_start = time.time()
 
-    # Build OpenAI-compatible client pointing at HF router (or custom base URL)
     client = OpenAI(
         api_key=HF_TOKEN if HF_TOKEN else "dummy",
         base_url=API_BASE_URL,
@@ -943,7 +922,6 @@ def main() -> None:
     scores: Dict[str, float] = {}
 
     for task_id in tasks:
-        task_start = time.time()
         try:
             reward, steps = run_task(client, task_id, HF_SPACE_URL)
         except Exception as exc:
@@ -960,12 +938,11 @@ def main() -> None:
                 "Remaining tasks may time out."
             )
 
-    avg_reward = float(np.mean(list(scores.values())))
+    avg_reward = sum(scores.values()) / len(scores)
     print("\n=== battisiBot Evaluation Summary ===")
     print(f"Scores  : {scores}")
     print(f"Average : {avg_reward:.4f}")
-    total_elapsed = time.time() - t_start
-    print(f"Elapsed : {total_elapsed:.1f}s")
+    print(f"Elapsed : {time.time() - t_start:.1f}s")
 
 
 if __name__ == "__main__":
