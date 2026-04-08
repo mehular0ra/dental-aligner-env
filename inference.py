@@ -11,15 +11,38 @@ Usage:
   API_BASE_URL=... MODEL_NAME=... HF_TOKEN=... HF_SPACE_URL=... python inference.py
 """
 
+import subprocess
+import sys
+
+# Auto-install third-party deps if running in a bare environment (e.g. evaluator CI)
+def _pip_install(*packages: str) -> None:
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "--quiet", *packages]
+    )
+
+try:
+    import numpy as np
+except ImportError:
+    _pip_install("numpy>=1.24")
+    import numpy as np
+
+try:
+    import requests
+except ImportError:
+    _pip_install("requests>=2.28")
+    import requests
+
+try:
+    from openai import OpenAI
+except ImportError:
+    _pip_install("openai>=1.0")
+    from openai import OpenAI
+
 import json
 import math
 import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
-
-import numpy as np
-import requests
-from openai import OpenAI
 
 # ---------------------------------------------------------------------------
 # Environment variables
