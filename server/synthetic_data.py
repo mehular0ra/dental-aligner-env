@@ -20,6 +20,13 @@ from .quaternion_utils import (
     quaternion_from_axis_angle,
     random_quaternion_perturbation,
 )
+from .clinical_profiles import (
+    sample_profile,
+    MALOCCLUSION_GEOMETRY,
+    CROWDING_PARAMS,
+    OVERBITE_PARAMS,
+    OVERJET_PARAMS,
+)
 
 
 class DentalCaseGenerator:
@@ -178,6 +185,98 @@ class DentalCaseGenerator:
             'baseline_trajectory': baseline_traj,  # shape (26, 28, 7)
             'difficulty':          difficulty,
             'seed':                seed,
+        }
+
+    def apply_clinical_perturbation(
+        self,
+        ideal: np.ndarray,
+        profile: Dict[str, Any],
+        rng: np.random.Generator,
+    ) -> np.ndarray:
+        """
+        Perturb the ideal config based on a real clinical profile.
+        Applies diagnosis-specific geometry shifts before random perturbation.
+        """
+        config = ideal.copy()
+        malocclusion = profile.get("malocclusion", "ClassI")
+        crowding = profile.get("crowding", "Crowding_below_4")
+        overbite = profile.get("overbite", "Normal_overbite")
+        overjet = profile.get("overjet", "Normal_overjet")
+
+        # 1. Molar relationship shift (Class II/III)
+        mal_params = MALOCCLUSION_GEOMETRY.get(malocclusion, MALOCCLUSION_GEOMETRY["ClassI"])
+        molar_shift = mal_params["molar_shift_mm"]
+        if abs(molar_shift) > 0.01:
+            # Upper first molars (indices 5, 12 = teeth 16, 26)
+            # Shift anteriorly (positive Y direction in our arch layout)
+            for idx in [5, 12]:  # upper molar_1 positions
+                config[idx, 5] += molar_shift  # Y shift
+            # For Class III, also shift lower molars
+            if molar_shift < 0:
+                for idx in [19, 26]:  # lower molar_1 positions
+                    config[idx, 5] += abs(molar_shift)
+
+        # 2. Overjet (horizontal protrusion of upper incisors)
+        oj_params = OVERJET_PARAMS.get(overjet, OVERJET_PARAMS["Normal_overjet"])
+        protrusion = oj_params["horizontal_protrusion_mm"]
+        if protrusion > 1.5:
+            # Upper incisors (indices 0,1,7,8 = teeth 11,12,21,22)
+            for idx in [0, 1, 7, 8]:
+                config[idx, 5] -= protrusion  # push forward (negative Y = labial)
+
+        # 3. Overbite (vertical overlap)
+        ob_params = OVERBITE_PARAMS.get(overbite, OVERBITE_PARAMS["Normal_overbite"])
+        vert_overlap = ob_params["vertical_overlap_mm"]
+        if vert_overlap > 2.5:
+            # Upper incisors drop down, lower incisors rise up
+            for idx in [0, 1, 7, 8]:
+                config[idx, 6] -= vert_overlap * 0.5  # Z down
+            for idx in [14, 15, 21, 22]:  # lower incisors
+                config[idx, 6] += vert_overlap * 0.5  # Z up
+
+        # 4. Crowding (arch compression)
+        cr_params = CROWDING_PARAMS.get(crowding, CROWDING_PARAMS["Crowding_below_4"])
+        compression = cr_params["arch_compression"]
+        if compression > 0.03:
+            # Compress arch: scale X coordinates toward center, add rotational crowding
+            for i in range(N_TEETH):
+                config[i, 4] *= (1.0 - compression)
+                # Add slight rotation for crowded teeth
+                if rng.random() < compression * 5:  # ~50% for 10% compression
+                    rot_deg = rng.uniform(5.0, 15.0)
+                    axis = np.array([0.0, 0.0, 1.0])  # tipping
+                    delta_q = quaternion_from_axis_angle(axis, math.radians(rot_deg))
+                    old_q = config[i, :4]
+                    config[i, :4] = quaternion_normalize(quaternion_multiply(delta_q, old_q))
+
+        # 5. Add random noise on top (scaled by difficulty)
+        difficulty_level = profile.get("difficulty_level", "easy")
+        config = self.apply_malocclusion(config, difficulty_level, rng)
+
+        return config
+
+    def generate_case_for_profile(
+        self,
+        profile: Dict[str, Any],
+        seed: int,
+    ) -> Dict[str, Any]:
+        """
+        Generate a dental case informed by a real clinical profile.
+        """
+        rng = np.random.default_rng(seed)
+        ideal = self.generate_ideal_config()
+        initial = self.apply_clinical_perturbation(ideal, profile, rng)
+        baseline_traj = self.generate_baseline_trajectory(initial, ideal)
+
+        return {
+            "initial_config": initial,
+            "target_config": ideal,
+            "tooth_ids": TOOTH_IDS,
+            "tooth_types": TOOTH_TYPES,
+            "baseline_trajectory": baseline_traj,
+            "difficulty": profile.get("difficulty_level", "easy"),
+            "seed": seed,
+            "clinical_profile": profile,
         }
 
     def apply_adversarial_jitter(

@@ -22,6 +22,8 @@ from server.dental_constants import (
     ARCH_ADJACENCY, STAGING_PRIORITY,
 )
 from server.quaternion_utils import quaternion_to_angle_deg, quaternion_multiply, quaternion_inverse
+from server.clinical_profiles import sample_profile
+from server.force_decay import apply_force_decay
 
 
 # ---------------------------------------------------------------------------
@@ -133,8 +135,16 @@ class DentalAlignerEnvironment(Environment):
             task_id = 'task_easy'
         difficulty = difficulty_map.get(task_id, 'easy')
 
-        # 4. Generate case
-        case = self._case_gen.generate_case(difficulty, seed)
+        # 4. Generate case (informed by real clinical profile)
+        import numpy as _np
+        profile_rng = _np.random.default_rng(seed)
+        try:
+            profile = sample_profile(difficulty, profile_rng)
+            case = self._case_gen.generate_case_for_profile(profile, seed)
+        except Exception:
+            # Fallback to synthetic if profile loading fails
+            case = self._case_gen.generate_case(difficulty, seed)
+            profile = None
 
         # 5. Store session
         _SESSIONS[episode_id] = {
@@ -146,6 +156,7 @@ class DentalAlignerEnvironment(Environment):
             'adv_stages_used':     0,
             'last_agent_traj':     None,
             'seed':                seed,
+            'clinical_profile':    profile,
         }
         _LAST_EPISODE_ID = episode_id
 
@@ -160,6 +171,16 @@ class DentalAlignerEnvironment(Environment):
         baseline_json    = self._build_baseline_json(baseline_traj)
 
         task_desc = _TASK_DESCRIPTIONS[difficulty]
+        if profile:
+            task_desc += (
+                f"\n\nCLINICAL PROFILE (Patient {profile.get('patient_id', '?')}):\n"
+                f"  Malocclusion: {profile.get('malocclusion', 'Unknown')}\n"
+                f"  Crowding: {profile.get('crowding', 'Unknown')}\n"
+                f"  Overbite: {profile.get('overbite', 'Unknown')}\n"
+                f"  Overjet: {profile.get('overjet', 'Unknown')}\n"
+                f"  Dentition: {profile.get('dentition', 'Unknown')}\n"
+                f"  Difficulty: {profile.get('difficulty_score', '?')}/5"
+            )
 
         return AlignerObservation(
             done=False,
@@ -241,18 +262,24 @@ class DentalAlignerEnvironment(Environment):
         else:
             agent_traj_for_grade = agent_traj
 
-        # --- Grade ---
+        # --- Apply pharmacokinetic force decay ---
+        # The agent plans intended positions, but actual positions are delayed
+        # by biomechanical response. This makes SLERP suboptimal.
+        actual_traj = apply_force_decay(agent_traj_for_grade, initial_config)
+
+        # --- Grade on actual (physically realized) trajectory ---
         reward, feedback = self._grader.grade(
             task_id=task_id,
-            agent_traj=agent_traj_for_grade,
+            agent_traj=actual_traj,
             initial=initial_config,
             target=target_config,
             adv_stages=session['adv_stages_used'],
             pre_jitter_accuracy=session['pre_jitter_accuracy'],
         )
 
-        # Store agent trajectory in session
-        session['last_agent_traj'] = agent_traj_for_grade
+        # Store both planned and actual trajectories in session
+        session['last_agent_traj'] = actual_traj
+        session['last_planned_traj'] = agent_traj_for_grade
 
         # --- task_hard step 1: apply adversarial jitter ---
         adv_jitter_applied  = False

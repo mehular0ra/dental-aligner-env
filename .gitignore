@@ -45,6 +45,8 @@ signed-agreements/
 *.png
 *.jpg
 outputs/
+artifacts/_smoke/
+checkpoints/
 
 # Datasets (large, downloaded separately)
 datasets/

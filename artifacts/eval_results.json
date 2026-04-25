@@ -1,0 +1,911 @@
+{
+  "results": {
+    "slerp_nodecay": [
+      {
+        "total": 0.9266459965675301,
+        "accuracy": 0.9792307730469926,
+        "smoothness": 0.9738179191442383,
+        "compliance": 1.0,
+        "staging": 0.7009505175994272,
+        "difficulty": "easy",
+        "seed": 9000
+      },
+      {
+        "total": 0.9230876232842951,
+        "accuracy": 0.9789960947620747,
+        "smoothness": 0.9707725839743842,
+        "compliance": 1.0,
+        "staging": 0.6866733429229419,
+        "difficulty": "easy",
+        "seed": 9001
+      },
+      {
+        "total": 0.9416751979881552,
+        "accuracy": 0.9662486657558521,
+        "smoothness": 0.9356742521647072,
+        "compliance": 0.9642857142857143,
+        "staging": 0.8759186919786502,
+        "difficulty": "easy",
+        "seed": 9002
+      },
+      {
+        "total": 0.9613980687307553,
+        "accuracy": 0.9766846941600269,
+        "smoothness": 0.9587881147487344,
+        "compliance": 1.0,
+        "staging": 0.8948328405849881,
+        "difficulty": "easy",
+        "seed": 9003
+      },
+      {
+        "total": 0.9570431607930883,
+        "accuracy": 0.9764479139461855,
+        "smoothness": 0.9543280676140904,
+        "compliance": 1.0,
+        "staging": 0.8779919084589791,
+        "difficulty": "easy",
+        "seed": 9004
+      },
+      {
+        "total": 0.936242959488419,
+        "accuracy": 0.9742332850706343,
+        "smoothness": 0.9595721646214977,
+        "compliance": 1.0,
+        "staging": 0.7731760626793281,
+        "difficulty": "easy",
+        "seed": 9005
+      },
+      {
+        "total": 0.9558084689719021,
+        "accuracy": 0.9797718592350659,
+        "smoothness": 0.9588124014576428,
+        "compliance": 1.0,
+        "staging": 0.8606862249317355,
+        "difficulty": "easy",
+        "seed": 9006
+      },
+      {
+        "total": 0.9551475262143831,
+        "accuracy": 0.9771520197344961,
+        "smoothness": 0.968992955935356,
+        "compliance": 1.0,
+        "staging": 0.8524406356675671,
+        "difficulty": "easy",
+        "seed": 9007
+      },
+      {
+        "total": 0.8967272734559026,
+        "accuracy": 0.9565613035688303,
+        "smoothness": 0.8828978634924957,
+        "compliance": 0.9642857142857143,
+        "staging": 0.6455864752952472,
+        "difficulty": "medium",
+        "seed": 10000
+      },
+      {
+        "total": 0.8954176370476542,
+        "accuracy": 0.9544633618982585,
+        "smoothness": 0.92284919239576,
+        "compliance": 1.0,
+        "staging": 0.5422619047619047,
+        "difficulty": "medium",
+        "seed": 10001
+      },
+      {
+        "total": 0.9116074007034334,
+        "accuracy": 0.9606845783070492,
+        "smoothness": 0.8883671049408266,
+        "compliance": 1.0,
+        "staging": 0.6775061298473055,
+        "difficulty": "medium",
+        "seed": 10002
+      },
+      {
+        "total": 0.8910578811642724,
+        "accuracy": 0.9553128830423032,
+        "smoothness": 0.9103621007163258,
+        "compliance": 0.9642857142857143,
+        "staging": 0.574916805298853,
+        "difficulty": "medium",
+        "seed": 10003
+      },
+      {
+        "total": 0.9163850950611307,
+        "accuracy": 0.958649219942263,
+        "smoothness": 0.9205278455829993,
+        "compliance": 1.0,
+        "staging": 0.6725825131367503,
+        "difficulty": "medium",
+        "seed": 10004
+      },
+      {
+        "total": 0.8850967061522371,
+        "accuracy": 0.95382098718663,
+        "smoothness": 0.9017199205704739,
+        "compliance": 0.9642857142857143,
+        "staging": 0.5511742329801068,
+        "difficulty": "medium",
+        "seed": 10005
+      },
+      {
+        "total": 0.9030454158968653,
+        "accuracy": 0.9506147108083389,
+        "smoothness": 0.9003703672977559,
+        "compliance": 0.9642857142857143,
+        "staging": 0.682250531442792,
+        "difficulty": "medium",
+        "seed": 10006
+      },
+      {
+        "total": 0.8922750074104103,
+        "accuracy": 0.9527645226261493,
+        "smoothness": 0.9096386834032281,
+        "compliance": 1.0,
+        "staging": 0.5440215703199838,
+        "difficulty": "medium",
+        "seed": 10007
+      },
+      {
+        "total": 0.3590674818372582,
+        "accuracy": 0.9193565003522384,
+        "smoothness": 0.8687067979465329,
+        "compliance": 0.8214285714285714,
+        "staging": 0.6458137208490354,
+        "difficulty": "hard",
+        "seed": 11000
+      },
+      {
+        "total": 0.32746178352160665,
+        "accuracy": 0.9100398652853904,
+        "smoothness": 0.836489232036771,
+        "compliance": 0.6428571428571428,
+        "staging": 0.46003776463313345,
+        "difficulty": "hard",
+        "seed": 11001
+      },
+      {
+        "total": 0.33630960709606605,
+        "accuracy": 0.9138774058185385,
+        "smoothness": 0.8465148522259842,
+        "compliance": 0.75,
+        "staging": 0.4506068268721273,
+        "difficulty": "hard",
+        "seed": 11002
+      },
+      {
+        "total": 0.3382690592265685,
+        "accuracy": 0.9168036898293322,
+        "smoothness": 0.7758632151490026,
+        "compliance": 0.6785714285714286,
+        "staging": 0.6110096397555963,
+        "difficulty": "hard",
+        "seed": 11003
+      },
+      {
+        "total": 0.3312006473109168,
+        "accuracy": 0.9181199404058044,
+        "smoothness": 0.7578260693447896,
+        "compliance": 0.6428571428571428,
+        "staging": 0.5670055775281468,
+        "difficulty": "hard",
+        "seed": 11004
+      },
+      {
+        "total": 0.30911877985907615,
+        "accuracy": 0.9080936526615168,
+        "smoothness": 0.8275876634332098,
+        "compliance": 0.5,
+        "staging": 0.37241299425709395,
+        "difficulty": "hard",
+        "seed": 11005
+      },
+      {
+        "total": 0.3286648682018149,
+        "accuracy": 0.9095384545807095,
+        "smoothness": 0.8145336730268937,
+        "compliance": 0.6785714285714286,
+        "staging": 0.46365726221065123,
+        "difficulty": "hard",
+        "seed": 11006
+      },
+      {
+        "total": 0.3363592202034062,
+        "accuracy": 0.9077140019126544,
+        "smoothness": 0.7674468871186729,
+        "compliance": 0.7142857142857143,
+        "staging": 0.5824863295406167,
+        "difficulty": "hard",
+        "seed": 11007
+      }
+    ],
+    "slerp_decay": [
+      {
+        "total": 0.8606605567962978,
+        "accuracy": 0.8933462661754258,
+        "smoothness": 0.8671680748751132,
+        "compliance": 1.0,
+        "staging": 0.6494421767555241,
+        "difficulty": "easy",
+        "seed": 9000
+      },
+      {
+        "total": 0.8640896162572443,
+        "accuracy": 0.8920384398396156,
+        "smoothness": 0.858157375734937,
+        "compliance": 1.0,
+        "staging": 0.6782138258720534,
+        "difficulty": "easy",
+        "seed": 9001
+      },
+      {
+        "total": 0.8381698529885846,
+        "accuracy": 0.829310468097605,
+        "smoothness": 0.667618501789019,
+        "compliance": 1.0,
+        "staging": 0.8646098269586938,
+        "difficulty": "easy",
+        "seed": 9002
+      },
+      {
+        "total": 0.894337195033498,
+        "accuracy": 0.8840323865204509,
+        "smoothness": 0.8198926122814238,
+        "compliance": 1.0,
+        "staging": 0.8837285898451641,
+        "difficulty": "easy",
+        "seed": 9003
+      },
+      {
+        "total": 0.8928583157500908,
+        "accuracy": 0.8896870082200675,
+        "smoothness": 0.8194190796110637,
+        "compliance": 1.0,
+        "staging": 0.8654984826992544,
+        "difficulty": "easy",
+        "seed": 9004
+      },
+      {
+        "total": 0.870724305465661,
+        "accuracy": 0.878653873010049,
+        "smoothness": 0.8164790918643341,
+        "compliance": 1.0,
+        "staging": 0.7798346894438735,
+        "difficulty": "easy",
+        "seed": 9005
+      },
+      {
+        "total": 0.8936584181886778,
+        "accuracy": 0.8958428350665883,
+        "smoothness": 0.8347008345968159,
+        "compliance": 1.0,
+        "staging": 0.8419055862133961,
+        "difficulty": "easy",
+        "seed": 9006
+      },
+      {
+        "total": 0.8943530408255163,
+        "accuracy": 0.8887283830995333,
+        "smoothness": 0.851467654370266,
+        "compliance": 1.0,
+        "staging": 0.8428407835582485,
+        "difficulty": "easy",
+        "seed": 9007
+      },
+      {
+        "total": 0.7393630849543303,
+        "accuracy": 0.7838855757087426,
+        "smoothness": 0.43628637021435623,
+        "compliance": 1.0,
+        "staging": 0.6623820122834996,
+        "difficulty": "medium",
+        "seed": 10000
+      },
+      {
+        "total": 0.7408610438400857,
+        "accuracy": 0.7751599822236379,
+        "smoothness": 0.5088559734829575,
+        "compliance": 1.0,
+        "staging": 0.6017857142857143,
+        "difficulty": "medium",
+        "seed": 10001
+      },
+      {
+        "total": 0.7695893632850017,
+        "accuracy": 0.798370072577655,
+        "smoothness": 0.48251641174314575,
+        "compliance": 1.0,
+        "staging": 0.758796988509518,
+        "difficulty": "medium",
+        "seed": 10002
+      },
+      {
+        "total": 0.7516401466081635,
+        "accuracy": 0.7920042176335498,
+        "smoothness": 0.5316677771664315,
+        "compliance": 1.0,
+        "staging": 0.5926979549318643,
+        "difficulty": "medium",
+        "seed": 10003
+      },
+      {
+        "total": 0.7783099290240487,
+        "accuracy": 0.8029423060005251,
+        "smoothness": 0.5790399856710704,
+        "compliance": 1.0,
+        "staging": 0.6745192945973223,
+        "difficulty": "medium",
+        "seed": 10004
+      },
+      {
+        "total": 0.7176085854084644,
+        "accuracy": 0.7771182774032621,
+        "smoothness": 0.46752722811823355,
+        "compliance": 1.0,
+        "staging": 0.495999433022331,
+        "difficulty": "medium",
+        "seed": 10005
+      },
+      {
+        "total": 0.7140270633188681,
+        "accuracy": 0.7486842950256379,
+        "smoothness": 0.3728511353649806,
+        "compliance": 1.0,
+        "staging": 0.6836593565622336,
+        "difficulty": "medium",
+        "seed": 10006
+      },
+      {
+        "total": 0.7152880293256463,
+        "accuracy": 0.7661389097954333,
+        "smoothness": 0.45181506879190825,
+        "compliance": 1.0,
+        "staging": 0.5344167077287978,
+        "difficulty": "medium",
+        "seed": 10007
+      },
+      {
+        "total": 0.23909200966452668,
+        "accuracy": 0.615583356237291,
+        "smoothness": 0.0,
+        "compliance": 0.9404761904761905,
+        "staging": 0.6058616550847225,
+        "difficulty": "hard",
+        "seed": 11000
+      },
+      {
+        "total": 0.2126584103551234,
+        "accuracy": 0.5704607582038109,
+        "smoothness": 0.0,
+        "compliance": 0.8511904761904762,
+        "staging": 0.4630263066676732,
+        "difficulty": "hard",
+        "seed": 11001
+      },
+      {
+        "total": 0.2103312190914245,
+        "accuracy": 0.5963790102808568,
+        "smoothness": 0.0,
+        "compliance": 0.8214285714285714,
+        "staging": 0.39264365570813703,
+        "difficulty": "hard",
+        "seed": 11002
+      },
+      {
+        "total": 0.23676017681109493,
+        "accuracy": 0.6158200054062692,
+        "smoothness": 0.0,
+        "compliance": 0.8184523809523809,
+        "staging": 0.6961632954454999,
+        "difficulty": "hard",
+        "seed": 11003
+      },
+      {
+        "total": 0.23156812147962222,
+        "accuracy": 0.6099641955300347,
+        "smoothness": 0.0,
+        "compliance": 0.8794642857142857,
+        "staging": 0.5815394792672511,
+        "difficulty": "hard",
+        "seed": 11004
+      },
+      {
+        "total": 0.1981617113488948,
+        "accuracy": 0.5502955710015859,
+        "smoothness": 0.0,
+        "compliance": 0.8511904761904762,
+        "staging": 0.3235108191238923,
+        "difficulty": "hard",
+        "seed": 11005
+      },
+      {
+        "total": 0.22292329534822605,
+        "accuracy": 0.5794229256357134,
+        "smoothness": 0.0,
+        "compliance": 0.8482142857142857,
+        "staging": 0.5789685172334925,
+        "difficulty": "hard",
+        "seed": 11006
+      },
+      {
+        "total": 0.22103503451653653,
+        "accuracy": 0.5823744925106722,
+        "smoothness": 0.0,
+        "compliance": 0.8184523809523809,
+        "staging": 0.5756827659063136,
+        "difficulty": "hard",
+        "seed": 11007
+      }
+    ],
+    "agent_decay": [
+      {
+        "total": 0.9025690151696207,
+        "accuracy": 0.9323963638707092,
+        "smoothness": 0.9140532258041689,
+        "compliance": 1.0,
+        "staging": 0.7339991223025161,
+        "difficulty": "easy",
+        "seed": 9000
+      },
+      {
+        "total": 0.8937334890794368,
+        "accuracy": 0.931150104943583,
+        "smoothness": 0.9062482233007355,
+        "compliance": 1.0,
+        "staging": 0.7001190122092826,
+        "difficulty": "easy",
+        "seed": 9001
+      },
+      {
+        "total": 0.8836265080551262,
+        "accuracy": 0.8973261058226493,
+        "smoothness": 0.7948372524038098,
+        "compliance": 0.96875,
+        "staging": 0.8598930762265224,
+        "difficulty": "easy",
+        "seed": 9002
+      },
+      {
+        "total": 0.9228469505043921,
+        "accuracy": 0.9317217045986776,
+        "smoothness": 0.8880419728423172,
+        "compliance": 1.0,
+        "staging": 0.8627493704822884,
+        "difficulty": "easy",
+        "seed": 9003
+      },
+      {
+        "total": 0.917549398342705,
+        "accuracy": 0.9367427756983772,
+        "smoothness": 0.8840572182779216,
+        "compliance": 0.9880952380952381,
+        "staging": 0.8421089839436116,
+        "difficulty": "easy",
+        "seed": 9004
+      },
+      {
+        "total": 0.9069928189990273,
+        "accuracy": 0.9275019136093131,
+        "smoothness": 0.8834061193181557,
+        "compliance": 1.0,
+        "staging": 0.7965541484583535,
+        "difficulty": "easy",
+        "seed": 9005
+      },
+      {
+        "total": 0.9226022637499964,
+        "accuracy": 0.937078058666542,
+        "smoothness": 0.8930531169340926,
+        "compliance": 1.0,
+        "staging": 0.845802084482805,
+        "difficulty": "easy",
+        "seed": 9006
+      },
+      {
+        "total": 0.9245982256207398,
+        "accuracy": 0.9337788012241038,
+        "smoothness": 0.9066775540036736,
+        "compliance": 1.0,
+        "staging": 0.8487559716518174,
+        "difficulty": "easy",
+        "seed": 9007
+      },
+      {
+        "total": 0.8099456063460325,
+        "accuracy": 0.8640570106583779,
+        "smoothness": 0.6343680261702935,
+        "compliance": 0.9360119047619048,
+        "staging": 0.7136264357554859,
+        "difficulty": "medium",
+        "seed": 10000
+      },
+      {
+        "total": 0.8044734922256577,
+        "accuracy": 0.8529234087214151,
+        "smoothness": 0.6779073666968705,
+        "compliance": 0.9523809523809523,
+        "staging": 0.6306686299030422,
+        "difficulty": "medium",
+        "seed": 10001
+      },
+      {
+        "total": 0.8208507464343331,
+        "accuracy": 0.8731947105900352,
+        "smoothness": 0.6625335126065808,
+        "compliance": 0.9211309523809523,
+        "staging": 0.7412015578087374,
+        "difficulty": "medium",
+        "seed": 10002
+      },
+      {
+        "total": 0.8258064313770503,
+        "accuracy": 0.869261825586252,
+        "smoothness": 0.6938806144917813,
+        "compliance": 0.9672619047619048,
+        "staging": 0.6827340400833317,
+        "difficulty": "medium",
+        "seed": 10003
+      },
+      {
+        "total": 0.8388237997240631,
+        "accuracy": 0.8748182883180887,
+        "smoothness": 0.7247051294419202,
+        "compliance": 0.9642857142857143,
+        "staging": 0.7157160082359749,
+        "difficulty": "medium",
+        "seed": 10004
+      },
+      {
+        "total": 0.8003781040054793,
+        "accuracy": 0.8581718197307021,
+        "smoothness": 0.6606443578819935,
+        "compliance": 0.9375,
+        "staging": 0.6304794236684306,
+        "difficulty": "medium",
+        "seed": 10005
+      },
+      {
+        "total": 0.7937818570060191,
+        "accuracy": 0.839473579062566,
+        "smoothness": 0.5994179485849138,
+        "compliance": 0.9360119047619048,
+        "staging": 0.7262185050566712,
+        "difficulty": "medium",
+        "seed": 10006
+      },
+      {
+        "total": 0.7946450388487445,
+        "accuracy": 0.8474775584896593,
+        "smoothness": 0.6398950875410143,
+        "compliance": 0.9613095238095238,
+        "staging": 0.6202614350552677,
+        "difficulty": "medium",
+        "seed": 10007
+      },
+      {
+        "total": 0.27279212915491224,
+        "accuracy": 0.750345349157237,
+        "smoothness": 0.24781720309108024,
+        "compliance": 0.7767857142857143,
+        "staging": 0.6117045402694032,
+        "difficulty": "hard",
+        "seed": 11000
+      },
+      {
+        "total": 0.24065976727378718,
+        "accuracy": 0.717933538457487,
+        "smoothness": 0.04783454524289288,
+        "compliance": 0.7232142857142857,
+        "staging": 0.5232586301400183,
+        "difficulty": "hard",
+        "seed": 11001
+      },
+      {
+        "total": 0.25372326705050624,
+        "accuracy": 0.7292731416821339,
+        "smoothness": 0.12153609879419536,
+        "compliance": 0.7872023809523809,
+        "staging": 0.5295100364411497,
+        "difficulty": "hard",
+        "seed": 11002
+      },
+      {
+        "total": 0.2588229655970129,
+        "accuracy": 0.7427365231221785,
+        "smoothness": 0.05860774722096296,
+        "compliance": 0.7514880952380952,
+        "staging": 0.6602463038419711,
+        "difficulty": "hard",
+        "seed": 11003
+      },
+      {
+        "total": 0.24771442254235088,
+        "accuracy": 0.7426177880110865,
+        "smoothness": 0.0,
+        "compliance": 0.7202380952380952,
+        "staging": 0.6023067706303524,
+        "difficulty": "hard",
+        "seed": 11004
+      },
+      {
+        "total": 0.2169881357178951,
+        "accuracy": 0.6926061946782006,
+        "smoothness": 0.0,
+        "compliance": 0.6413690476190477,
+        "staging": 0.4048562428110183,
+        "difficulty": "hard",
+        "seed": 11005
+      },
+      {
+        "total": 0.2353499162819038,
+        "accuracy": 0.7169097835545868,
+        "smoothness": 0.002134764469019723,
+        "compliance": 0.6994047619047619,
+        "staging": 0.5246999345727044,
+        "difficulty": "hard",
+        "seed": 11006
+      },
+      {
+        "total": 0.23742714224663852,
+        "accuracy": 0.7237551381819377,
+        "smoothness": 0.0,
+        "compliance": 0.7098214285714286,
+        "staging": 0.5258600995652509,
+        "difficulty": "hard",
+        "seed": 11007
+      }
+    ]
+  },
+  "summary": {
+    "slerp_nodecay": {
+      "easy": {
+        "total": {
+          "mean": 0.9446311252548161,
+          "std": 0.013862732790756675,
+          "n": 8
+        },
+        "accuracy": {
+          "mean": 0.976095663213916,
+          "std": 0.004089232391859276,
+          "n": 8
+        },
+        "smoothness": {
+          "mean": 0.9600948074575815,
+          "std": 0.011262547046476315,
+          "n": 8
+        },
+        "compliance": {
+          "mean": 0.9955357142857143,
+          "std": 0.011811389781538345,
+          "n": 8
+        },
+        "staging": {
+          "mean": 0.8153337781029522,
+          "std": 0.07807428207331278,
+          "n": 8
+        }
+      },
+      "medium": {
+        "total": {
+          "mean": 0.8989515521114884,
+          "std": 0.009982094356844445,
+          "n": 8
+        },
+        "accuracy": {
+          "mean": 0.9553589459224778,
+          "std": 0.0030216352360085937,
+          "n": 8
+        },
+        "smoothness": {
+          "mean": 0.9045916347999832,
+          "std": 0.013257041169754725,
+          "n": 8
+        },
+        "compliance": {
+          "mean": 0.9821428571428572,
+          "std": 0.01785714285714285,
+          "n": 8
+        },
+        "staging": {
+          "mean": 0.6112875203853678,
+          "std": 0.059770213642205874,
+          "n": 8
+        }
+      },
+      "hard": {
+        "total": {
+          "mean": 0.3333064309070892,
+          "std": 0.01299893654186651,
+          "n": 8
+        },
+        "accuracy": {
+          "mean": 0.912942938855773,
+          "std": 0.004395870934545177,
+          "n": 8
+        },
+        "smoothness": {
+          "mean": 0.8118710487852321,
+          "std": 0.037884003906147934,
+          "n": 8
+        },
+        "compliance": {
+          "mean": 0.6785714285714286,
+          "std": 0.08748177652797065,
+          "n": 8
+        },
+        "staging": {
+          "mean": 0.5191287644558001,
+          "std": 0.08915376512117289,
+          "n": 8
+        }
+      }
+    },
+    "slerp_decay": {
+      "easy": {
+        "total": {
+          "mean": 0.8761064126631963,
+          "std": 0.019701292842351562,
+          "n": 8
+        },
+        "accuracy": {
+          "mean": 0.881454957503667,
+          "std": 0.020355069116929598,
+          "n": 8
+        },
+        "smoothness": {
+          "mean": 0.8168629031403716,
+          "std": 0.05920438771524956,
+          "n": 8
+        },
+        "compliance": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 8
+        },
+        "staging": {
+          "mean": 0.8007592451682759,
+          "std": 0.08438596380443529,
+          "n": 8
+        }
+      },
+      "medium": {
+        "total": {
+          "mean": 0.740835905720576,
+          "std": 0.023078349233214373,
+          "n": 8
+        },
+        "accuracy": {
+          "mean": 0.7805379545460555,
+          "std": 0.016677927205079834,
+          "n": 8
+        },
+        "smoothness": {
+          "mean": 0.4788199938191355,
+          "std": 0.05878781674727607,
+          "n": 8
+        },
+        "compliance": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 8
+        },
+        "staging": {
+          "mean": 0.6255321827401601,
+          "std": 0.0803264185795982,
+          "n": 8
+        }
+      },
+      "hard": {
+        "total": {
+          "mean": 0.22156624732693114,
+          "std": 0.013198090841803862,
+          "n": 8
+        },
+        "accuracy": {
+          "mean": 0.5900375393507793,
+          "std": 0.02204732669702633,
+          "n": 8
+        },
+        "smoothness": {
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 8
+        },
+        "compliance": {
+          "mean": 0.8536086309523809,
+          "std": 0.03834508075575525,
+          "n": 8
+        },
+        "staging": {
+          "mean": 0.5271745618046229,
+          "std": 0.11534325841605098,
+          "n": 8
+        }
+      }
+    },
+    "agent_decay": {
+      "easy": {
+        "total": {
+          "mean": 0.9093148336901306,
+          "std": 0.014206645894339627,
+          "n": 8
+        },
+        "accuracy": {
+          "mean": 0.9284619785542444,
+          "std": 0.012118026663773188,
+          "n": 8
+        },
+        "smoothness": {
+          "mean": 0.8837968353606094,
+          "std": 0.035285919762133175,
+          "n": 8
+        },
+        "compliance": {
+          "mean": 0.9946056547619048,
+          "std": 0.010520778082127431,
+          "n": 8
+        },
+        "staging": {
+          "mean": 0.8112477212196496,
+          "std": 0.05820751447397144,
+          "n": 8
+        }
+      },
+      "medium": {
+        "total": {
+          "mean": 0.8110881344959224,
+          "std": 0.01504514137375988,
+          "n": 8
+        },
+        "accuracy": {
+          "mean": 0.859922275144637,
+          "std": 0.01187139608882328,
+          "n": 8
+        },
+        "smoothness": {
+          "mean": 0.661669005426921,
+          "std": 0.03600566515805182,
+          "n": 8
+        },
+        "compliance": {
+          "mean": 0.9469866071428572,
+          "std": 0.01558841912614831,
+          "n": 8
+        },
+        "staging": {
+          "mean": 0.6826132544458677,
+          "std": 0.04568309478915057,
+          "n": 8
+        }
+      },
+      "hard": {
+        "total": {
+          "mean": 0.24543471823312585,
+          "std": 0.015809027919555824,
+          "n": 8
+        },
+        "accuracy": {
+          "mean": 0.727022182105606,
+          "std": 0.017389645596939632,
+          "n": 8
+        },
+        "smoothness": {
+          "mean": 0.059741294852268895,
+          "std": 0.0816698995539675,
+          "n": 8
+        },
+        "compliance": {
+          "mean": 0.7261904761904762,
+          "std": 0.04351247475361143,
+          "n": 8
+        },
+        "staging": {
+          "mean": 0.5478053197839836,
+          "std": 0.07252899498445156,
+          "n": 8
+        }
+      }
+    }
+  },
+  "n_per_difficulty": 8,
+  "model_path": "scripted_agent"
+}

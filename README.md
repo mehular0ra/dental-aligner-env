@@ -124,10 +124,10 @@ The agent receives an `AlignerObservation` at each step.
 | `current_stage` | `int` | Current stage index (0–25). Always 0 at reset. |
 | `stages_remaining` | `int` | Number of stages left including the current one. |
 | `task_id` | `str` | One of `"task_easy"`, `"task_medium"`, `"task_hard"`. |
-| `tooth_table` | `list[dict]` | Structured list of dicts, one per tooth. Each dict contains `tooth_id`, `initial_pose` (7-vector), and `target_pose` (7-vector). |
-| `tooth_table_text` | `str` | Human-readable formatted table of tooth poses. |
-| `arch_graph_json` | `str` | JSON string encoding the dental arch as a graph. Nodes are teeth; edges connect adjacent teeth in each arch and cross-arch antagonist pairs. Edge attributes include current inter-tooth distances. |
-| `baseline_trajectory_json` | `str` | JSON string of the SLERP baseline trajectory, shape (26, 28, 7). Provides a valid reference plan the agent can refine. |
+| `tooth_table` | `list[ToothPoseTableRow]` | Structured list, one entry per tooth. Each row has `tooth_id`, `tooth_type`, flat `current_qw,…,current_tz` and `target_qw,…,target_tz` floats, plus precomputed `remaining_trans_mm` and `remaining_rot_deg` to the target. |
+| `tooth_table_text` | `str` | Human-readable Markdown table summarising current vs target poses and remaining distance per tooth. |
+| `arch_graph_json` | `str` | JSON string encoding the dental arch adjacency graph. Nodes are teeth (indexed by FDI ID); edges connect mesiodistal neighbours within each arch (no inter-tooth distance attributes — distances can be derived from `tooth_table`). |
+| `baseline_trajectory_json` | `str` | JSON string of the SLERP baseline trajectory (stages 1–24, shape `(24, 28, 7)`). Provided as a reference to refine; **note**: with pharmacokinetic force decay applied (see Reward Function), SLERP is NOT optimal and gives the agent room to improve. |
 | `adversarial_jitter_applied` | `bool` | True if mid-trajectory jitter has been applied (task_hard only). |
 | `jitter_description` | `str \| None` | Natural-language description of which teeth were jittered and by how much. None if no jitter applied. |
 | `last_plan_feedback` | `str \| None` | Structured feedback on the most recent submitted plan (constraint violations, smoothness score, staging order issues). None on the first step. |
@@ -155,30 +155,32 @@ The `AlignerState` is the internal environment state (not directly observed by t
 
 ## Task Descriptions
 
+**Patient profile sampling.** At every `reset()` the environment samples one of 1,063 real patient profiles from the Tsinghua Orthodontic Dataset (Zenodo 11392406, CC0). The sampled profile (Angle class, crowding, overbite, overjet, dentition, difficulty) is appended verbatim to `task_description` as a `CLINICAL PROFILE (Patient ...)` block, and drives the geometric perturbation applied to the ideal arch (`server/synthetic_data.py::apply_clinical_perturbation`).
+
 **task_easy**
 
-- 4–6 randomly selected teeth are perturbed from a baseline arch.
-- Perturbation magnitudes: translation ≤ 2 mm, rotation ≤ 15°.
-- Malocclusion class: Class I crowding (teeth displaced within arch, no skeletal discrepancy).
+- 4–6 teeth perturbed from the ideal arch.
+- Per-tooth random perturbation: translation in `[1.0, 3.0)` mm, rotation in `[5°, 15°)` about z-axis (tipping).
+- Profile distribution skewed toward Class I + Crowding ≤ 4 mm (415 of 1,063 profiles flagged `easy`).
 - No adversarial jitter.
 - Scoring emphasis: final accuracy (40%), smoothness (20%), compliance (20%), staging quality (20%).
 
 **task_medium**
 
 - 10–14 teeth perturbed.
-- Perturbation magnitudes: translation ≤ 4 mm, rotation ≤ 25°.
-- Malocclusion class: Class II (upper arch protrusive relative to lower; anterior-posterior correction required).
+- Per-tooth random perturbation: translation in `[2.0, 5.0)` mm, rotation in `[10°, 20°)` multi-axis.
+- Profile distribution skewed toward Class II (most cases at this level need anterior-posterior correction).
 - No adversarial jitter.
-- Scoring emphasis: final accuracy (45%), smoothness (25%), constraint compliance (15%), staging quality (15%).
+- Scoring emphasis: final accuracy (45%), smoothness (20%), constraint compliance (20%), staging quality (15%).
 
 **task_hard**
 
 - 18–24 teeth perturbed.
-- Perturbation magnitudes: translation ≤ 6 mm, rotation ≤ 35°.
-- Adversarial jitter injected mid-trajectory (between stages 8 and 16): selected teeth are displaced by 0.5–1.5 mm / 5–15° to simulate patient non-compliance (wearing aligners irregularly).
+- Per-tooth random perturbation: translation in `[3.0, 8.0)` mm, rotation in `[15°, 25°)` multi-axis.
+- Adversarial jitter injected at stage 12: 1–4 randomly selected teeth are displaced by ~`N(0, 0.2)` mm in each axis and rotated by up to ~2° (simulating patient non-compliance — irregular aligner wear).
 - The agent is notified of the jitter via `adversarial_jitter_applied` and `jitter_description` in the observation.
-- A recovery bonus rewards agents that successfully re-route from the jittered state to the target.
-- Scoring emphasis: final accuracy (40%), smoothness (20%), constraint compliance (15%), staging quality (10%), recovery bonus (15%).
+- A recovery bonus (up to +0.15) rewards agents that successfully re-route from the jittered state to the target.
+- Scoring emphasis: final accuracy (40%), smoothness (15%), constraint compliance (15%), staging quality (15%), recovery bonus (15%).
 
 ---
 
@@ -192,65 +194,79 @@ Per-tooth score combining translational and rotational error:
 
 ```
 trans_error_i  = ||t_pred_i - t_target_i||_2          (mm)
-rot_error_i    = 2 * arccos(|q_pred_i · q_target_i|)  (radians)
+rot_error_i    = angle(q_pred_i * q_target_i^{-1})    (degrees)
 
-tooth_score_i  = exp(-trans_error_i / 3.0) * exp(-rot_error_i / 0.5)
+trans_score_i  = max(0, 1 - trans_error_i / 2.0)
+rot_score_i    = max(0, 1 - rot_error_i / 10.0)
+tooth_score_i  = 0.6 * trans_score_i + 0.4 * rot_score_i
 
-R_accuracy     = (1 / N) * sum_i( w_i * tooth_score_i )
+R_accuracy     = (1 / N) * sum_i( tooth_score_i )
 ```
 
-where `N = 28`, `w_i` is a per-tooth clinical weight (incisors = 1.0, canines = 1.2, premolars = 0.9, molars = 0.8), and the dot product `q_pred_i · q_target_i` is clamped to `[-1, 1]` before arccos.
+where `N = 28`. Translation errors are penalised linearly up to 2mm (score=0), rotation errors up to 10 degrees (score=0).
 
 ### Smoothness
 
-Measures consistency of per-step deltas across the trajectory:
+Measures consistency of per-step translational deltas across the trajectory:
 
 ```
-delta_trans_{i,s}  = ||t_{i,s+1} - t_{i,s}||_2       for s in 0..24
-delta_rot_{i,s}    = 2 * arccos(|q_{i,s+1} · q_{i,s}|)
+delta_{i,s}  = ||t_{i,s+1} - t_{i,s}||_2       for all (tooth i, stage s) pairs
 
-combined_delta_{i,s} = delta_trans_{i,s} + alpha * delta_rot_{i,s}
-                       (alpha = 3.0 / pi converts radians to mm-equivalent)
-
-variance_i   = Var_s( combined_delta_{i,s} )
-
-R_smoothness = exp( -mean_i( variance_i ) / sigma_target )
-               (sigma_target = 0.05)
+R_smoothness = max(0, 1 - min(1, Var(all deltas) / 0.05))
 ```
+
+Lower variance in step sizes = smoother trajectory = higher score.
 
 ### Constraint Compliance
 
-Binary-style penalty based on the fraction of (tooth, stage) pairs that satisfy:
+Fraction of (tooth, stage) pairs that satisfy per-stage biomechanical limits:
 
 ```
-delta_trans <= budget_trans     (budget_trans = 0.25 mm)
-delta_rot   <= budget_rot       (budget_rot   = 2 * pi/180 * 2 = 0.035 rad)
+delta_trans <= 0.25 mm      (MAX_TRANSLATION_PER_STAGE_MM)
+delta_rot   <= 2.0 degrees  (MAX_ROTATION_PER_STAGE_DEG)
 
-R_compliance = fraction of (tooth, stage) pairs where both budgets are met
+R_compliance = 1 - (n_violations / (N_TEETH * N_STAGES))
 ```
+
+where n_violations counts (tooth, stage) pairs exceeding either limit.
 
 ### Staging Quality
 
-Spearman rank correlation between the agent's staging schedule and the clinically preferred order (incisors first, then canines, then premolars, then molars):
+Spearman rank correlation between the agent's staging schedule and the clinically preferred order (incisors first, then canines, then premolars, then molars), linearly remapped from `[-1, 1]` to `[0, 1]`:
 
 ```
 preferred_order_i  = clinical_priority(tooth_i)   (lower = earlier)
-agent_stage_i      = first stage s where delta_{i,s} > delta_threshold
-                     (delta_threshold = 0.05 mm or 0.5 deg)
+agent_stage_i      = first stage s where ||t_{i,s} - t_{i,0}|| > 0.1 mm
+                     (cumulative translational displacement > 0.1 mm)
+rho                = SpearmanCorr(preferred_order, agent_stage)
 
-R_staging = max(0, SpearmanCorr(preferred_order, agent_stage))
+R_staging = (rho + 1.0) / 2.0
 ```
+
+Edge case: if all teeth start moving at the same stage, `R_staging = 0.5`.
 
 ### Recovery Bonus (task_hard only)
 
 ```
-post_jitter_error  = mean_i( ||t_{i,final} - t_{i,target}||_2 )
-baseline_error     = mean_i( ||t_{i,initial} - t_{i,target}||_2 )
-
-recovery_ratio     = 1 - (post_jitter_error / baseline_error)
-
-R_recovery = clip(recovery_ratio, 0, 1)
+recovery_ratio  = max(0, (post_jitter_accuracy - pre_jitter_accuracy) / 0.5)
+R_recovery_raw  = min(1.0, recovery_ratio)            # in [0, 1]
+contribution    = R_recovery_raw * 0.15               # weighted into total reward
 ```
+
+If no adversarial jitter was applied, the recovery bonus is 0. Additionally, if total biomechanical violations exceed 20, the entire hard reward is halved (`reward *= 0.5`).
+
+### Pharmacokinetic Force Decay (applied BEFORE grading)
+
+The environment models delayed biomechanical response: forces applied at stage N produce actual tooth movement over stages N through N+4, peaking at N+2. This is based on PDL viscoelastic creep behavior (Cattaneo et al. 2005).
+
+```
+decay_kernel       = [0.05, 0.10, 0.30, 0.25, 0.15]  (sum = 0.85)
+forces[s]          = planned[s] - planned[s-1]                     # per-tooth Δtranslation
+actual[s]          = actual[s-1] + Σ_k decay_kernel[k] * forces[s-k]
+reward             = grader.grade(actual, initial, target)         # graded on actual, not planned
+```
+
+Rotations are kept as-planned (rotational movements complete faster — Proffit Ch. 9). The 15% force loss per stage models biological damping. This creates non-Markov dynamics: the agent must anticipate delayed effects and "lead" movements by 1-2 stages. A naive SLERP baseline drops ~9% on medium tasks because of this delay (validated: `0.8884 → 0.8121` on seed 42).
 
 ### Component Weight Tables
 
@@ -269,8 +285,8 @@ R_recovery = clip(recovery_ratio, 0, 1)
 | Component | Weight |
 |-----------|--------|
 | R_accuracy | 0.45 |
-| R_smoothness | 0.25 |
-| R_compliance | 0.15 |
+| R_smoothness | 0.20 |
+| R_compliance | 0.20 |
 | R_staging | 0.15 |
 | R_recovery | 0.00 |
 
@@ -279,9 +295,9 @@ R_recovery = clip(recovery_ratio, 0, 1)
 | Component | Weight |
 |-----------|--------|
 | R_accuracy | 0.40 |
-| R_smoothness | 0.20 |
+| R_smoothness | 0.15 |
 | R_compliance | 0.15 |
-| R_staging | 0.10 |
+| R_staging | 0.15 |
 | R_recovery | 0.15 |
 
 ---
@@ -371,19 +387,19 @@ Expected stdout format (evaluated by the grader):
 
 ## Baseline Scores
 
-Scores are single-episode rewards measured against the live HF Space.
+Scores are single-episode rewards on a fixed seed (42), with pharmacokinetic force decay applied before grading. Reproduce via `python prepare.py`.
 
-| Task | SLERP Baseline | battisiBot (LLM-planned) | Notes |
-|------|---------------|--------------------------|-------|
-| task_easy | ~0.87 | ~0.91 | LLM prioritises incisors first |
-| task_medium | ~0.89 | ~0.85 | Staging quality contributes 15% |
-| task_hard | ~0.32 | ~0.34 | Recovery bonus up to +15% |
+| Task | SLERP (no decay) | SLERP (with decay) | battisiBot (LLM-planned, with decay) | Notes |
+|------|------------------|--------------------|--------------------------------------|-------|
+| task_easy | ~0.87 | ~0.83 | ~0.86 | LLM prioritises incisors first |
+| task_medium | ~0.89 | ~0.81 | ~0.83 | Force decay drops SLERP ~9% |
+| task_hard | ~0.32 | ~0.28 | ~0.31 | Recovery bonus up to +15% |
 
-The SLERP baseline applies quaternion spherical linear interpolation uniformly across all 24 stages without any clinical staging logic. It achieves moderate smoothness but low staging quality scores.
+The SLERP baseline applies quaternion spherical linear interpolation uniformly across all 24 stages without any clinical staging logic. With force decay, it consistently overshoots — the agent has room to learn anticipation.
 
 battisiBot's gain over SLERP comes primarily from:
 - LLM-guided staging order (incisors move first, molars last).
-- Per-step delta budget enforcement in the Python post-processing pass.
+- Anticipation of force decay: starting movements 1-2 stages earlier than naive SLERP.
 - Recovery re-planning after jitter detection (task_hard).
 
 ---
