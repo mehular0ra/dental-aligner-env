@@ -37,11 +37,17 @@ htmlcov/
 *.pem
 *.key
 
+# Signed agreements / sensitive docs
+signed-agreements/
+
 # Generated artefacts
 *.gif
 *.png
 *.jpg
 outputs/
+
+# Datasets (large, downloaded separately)
+datasets/
 
 # Jupyter
 .ipynb_checkpoints/
